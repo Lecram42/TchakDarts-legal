@@ -3,7 +3,7 @@
 // Setup (one time): docs/tv-mode-setup.md.
 // The web apiKey is not a secret: access is enforced by database.rules.json.
 const FIREBASE = {
-  apiKey: '',          // TODO: Firebase console > Project settings > Your apps (Web) > apiKey
-  databaseURL: '',     // TODO: e.g. https://tchak-darts-default-rtdb.europe-west1.firebasedatabase.app
+  apiKey: 'AIzaSyBnmdjiZxBKdvqy3_vov9NDil4QjymHOqQ',
+  databaseURL: 'https://tchak-darts-default-rtdb.europe-west1.firebasedatabase.app',
 };
 const TV_PAGE = 'https://lecram42.github.io/TchakDarts-legal/tv/';
