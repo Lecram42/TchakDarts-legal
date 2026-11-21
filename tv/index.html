@@ -125,11 +125,11 @@ const FR = (navigator.language || '').toLowerCase().startsWith('fr');
 const TX = FR ? {
   waitTitle: 'Affiche la partie ici', step: 'Dans l’app Tchak Darts : menu › Afficher sur un écran, puis scanne ce QR code.',
   orCode: 'ou tape le code', players: 'Joueurs', sound: '🔊 Activer le son', soundOn: '🔊 Son activé', noConfig: 'Mode TV pas encore configuré (firebase-config.js).',
-  conn: 'Connexion…', spectator: 'Partie en direct', lost: 'Salle introuvable ou terminée.', winner: 'gagne !', between: 'Classement de la soirée', marks: 'marques',
+  conn: 'Connexion…', spectator: 'Partie en direct', lost: 'Salle introuvable ou terminée.', winner: 'gagne !', between: 'Classement de la session', marks: 'marques',
 } : {
   waitTitle: 'Show the game here', step: 'In the Tchak Darts app: menu › Show on a screen, then scan this QR code.',
   orCode: 'or type the code', players: 'Players', sound: '🔊 Turn sound on', soundOn: '🔊 Sound on', noConfig: 'TV mode not configured yet (firebase-config.js).',
-  conn: 'Connecting…', spectator: 'Live game', lost: 'Room not found or finished.', winner: 'wins!', between: 'Tonight’s standings', marks: 'marks',
+  conn: 'Connecting…', spectator: 'Live game', lost: 'Room not found or finished.', winner: 'wins!', between: 'Session standings', marks: 'marks',
 };
 const TARGETS = [20, 19, 18, 17, 16, 15, 25];
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -253,7 +253,7 @@ function render() {
 function topHTML(s, tx) {
   const g = s.g;
   const mode = g ? (g.mode === 'cricket' ? 'Cricket' : g.mode === 'cutthroat' ? 'Cut-throat' : g.start) + (g.legs > 1 ? ' · ' + (tx.leg || 'Manche') + ' ' + g.leg : '') : '';
-  const ses = s.gn != null ? `${(tx.evening || 'Soirée')} · ${(s.ph === 'play' ? s.gn + 1 : s.gn)}` : '';
+  const ses = s.gn != null ? `${(tx.evening || 'Session')} · ${(s.ph === 'play' ? s.gn + 1 : s.gn)}` : '';
   return `<div class="top"><span class="logo">tchak</span><span class="mode">${esc(mode)}</span><span class="ses">${esc(ses)}</span></div>`;
 }
 function followHTML() {
@@ -335,7 +335,7 @@ if (SPECTATOR) $('sound').style.display = 'none';
 // -------------------------------------------------------------------- demo
 function demo() {
   const pl = (sc, mk) => sc.map((v, i) => ({ n: ['Florian', 'Max', 'Léa'][i], c: ['#C6F432', '#4DA3FF', '#FF8A3D'][i], sc: v, lw: 0, mk: mk && mk[i] }));
-  const tx = { yourTurn: 'À TOI', next: 'ENSUITE', leg: 'Manche', evening: 'Soirée', ranking: 'Classement de la soirée', follow: 'Suivre la partie', winsShort: 'V' };
+  const tx = { yourTurn: 'À TOI', next: 'ENSUITE', leg: 'Manche', evening: 'Session', ranking: 'Classement de la session', follow: 'Suivre la partie', winsShort: 'V' };
   const r = [{ n: 'Max', c: '#4DA3FF', w: 3, p: 412 }, { n: 'Florian', c: '#C6F432', w: 2, p: 380 }, { n: 'Léa', c: '#FF8A3D', w: 1, p: 301 }];
   const states = {
     wait: { ph: 'lobby', lob: [{ n: 'Florian', c: '#C6F432' }, { n: 'Max', c: '#4DA3FF' }, { n: 'Léa', c: '#FF8A3D' }], tx },
@@ -346,7 +346,7 @@ function demo() {
   };
   const which = params.get('demo') || location.hash.replace(/^#demo-?/, '') || 'cricket';
   if (which === 'recap') {
-    onState({ ph: 'recap', tx, rc: { mvp: { n: 'Max', c: '#4DA3FF' }, podium: [{ n: 'Max', c: '#4DA3FF', w: 3 }, { n: 'Florian', c: '#C6F432', w: 2 }, { n: 'Léa', c: '#FF8A3D', w: 1 }], players: [{ n: 'Max', c: '#4DA3FF', w: 3, fav: 20 }, { n: 'Florian', c: '#C6F432', w: 2, fav: 19 }, { n: 'Léa', c: '#FF8A3D', w: 1, fav: 25 }], best: { n: 'Florian', c: '#C6F432', darts: ['T20', 'T20', 'T19'], pts: 177, cr: false }, blank: { n: 'Léa', c: '#FF8A3D', k: 3 }, games: 6, dur: '2 h 10', date: '21 novembre', tx: { mvp: 'MVP de la soirée', best: 'Meilleure volée', blank: 'Le plus gros raté', blanks: 'volées blanches d’affilée', games: 'parties', wins: 'V', fav: 'cible préférée', title: 'Récap de soirée', marks: 'marques' } } });
+    onState({ ph: 'recap', tx, rc: { mvp: { n: 'Max', c: '#4DA3FF' }, podium: [{ n: 'Max', c: '#4DA3FF', w: 3 }, { n: 'Florian', c: '#C6F432', w: 2 }, { n: 'Léa', c: '#FF8A3D', w: 1 }], players: [{ n: 'Max', c: '#4DA3FF', w: 3, fav: 20 }, { n: 'Florian', c: '#C6F432', w: 2, fav: 19 }, { n: 'Léa', c: '#FF8A3D', w: 1, fav: 25 }], best: { n: 'Florian', c: '#C6F432', darts: ['T20', 'T20', 'T19'], pts: 177, cr: false }, blank: { n: 'Léa', c: '#FF8A3D', k: 3 }, games: 6, dur: '2 h 10', date: '21 novembre', tx: { mvp: 'MVP de la session', best: 'Meilleure volée', blank: 'Le plus gros raté', blanks: 'volées blanches d’affilée', games: 'parties', wins: 'V', fav: 'cible préférée', title: 'Récap de session', marks: 'marques' } } });
     return;
   }
   onState(states[which] || states.cricket);
