@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D0E12">
+<meta name="robots" content="noindex">
+<title>Tchak Darts · Écran TV</title>
+<!-- TV page of the Tchak Darts app. Published to the TchakDarts-legal repo
+     (GitHub Pages) by scripts/publish-tv.mjs, which copies lib/ next to it.
+     ?demo shows sample states without Firebase; #CODE = spectator mode. -->
+<style>
+  @font-face{font-family:'Space Grotesk';src:url('lib/space-grotesk-latin-wght-normal.woff2') format('woff2');font-weight:300 700;font-display:swap;}
+  @font-face{font-family:'Inter';src:url('lib/inter-latin-wght-normal.woff2') format('woff2');font-weight:100 900;font-display:swap;}
+  :root{--bg:#0D0E12;--s1:#17191F;--s2:#22252D;--s3:#2B2F39;--fg:#F2F3F5;--mut:#9BA1AD;--dim:#5C6270;--accent:#C6F432;--disp:'Space Grotesk',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden;}
+  /* Everything is sized in vh/vw so it reads from the sofa at any resolution. */
+  .logo{font-family:var(--disp);font-weight:700;color:var(--accent);letter-spacing:-.02em;}
+  .disp{font-family:var(--disp);font-weight:700;}
+  #app{position:fixed;inset:0;padding:3.2vh 2.6vw;display:flex;flex-direction:column;gap:2vh;}
+  .top{display:flex;align-items:baseline;gap:1.4vw;}
+  .top .logo{font-size:5vh;}
+  .top .mode{font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-size:1.9vh;flex:1;}
+  .top .ses{font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-size:1.7vh;}
+  .main{flex:1;min-height:0;display:flex;gap:2vw;}
+  .left{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .right{width:31vw;display:flex;flex-direction:column;gap:2vh;}
+  .card{background:var(--s1);border-radius:1.6vh;padding:2.2vh 1.6vw;}
+  .lbl{font-size:1.5vh;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:700;}
+  /* cricket grid */
+  .cg{display:grid;gap:.9vh;flex:1;min-height:0;grid-template-rows:auto repeat(7,1fr);}
+  .pc{border-radius:1.6vh;background:var(--s1);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1vh .4vw;border:.35vh solid transparent;min-width:0;}
+  .pc .nm{font-weight:700;font-size:2vh;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pc .sc{font-family:var(--disp);font-weight:700;font-size:6.2vh;line-height:1;font-variant-numeric:tabular-nums;}
+  .pc.cur{border-color:var(--pc);} .pc.cur .nm{color:var(--pc);}
+  .pc.nxt{border-style:dashed;border-color:var(--pc);}
+  .num{border-radius:1.4vh;background:var(--s2);display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:4.2vh;}
+  .num.closed{background:var(--s1);color:var(--dim);}
+  .cell{border-radius:1.4vh;background:var(--s1);display:grid;place-items:center;}
+  .cell.cur{background:color-mix(in srgb,var(--pc) 10%,var(--s1));}
+  .cell.closed{opacity:.4;}
+  .cell svg{height:78%;max-height:7vh;}
+  /* x01 */
+  .xg{display:grid;gap:1.6vh;flex:1;min-height:0;align-content:center;}
+  .xg .pc{padding:2.6vh 1vw;}
+  .xg .pc .sc{font-size:13vh;}
+  .xg.many .pc .sc{font-size:8vh;}
+  .xg .pc .nm{font-size:3vh;}
+  .sug{font-family:var(--disp);font-weight:700;font-size:2.6vh;color:var(--accent);margin-top:.6vh;min-height:3vh;}
+  /* right panel */
+  .turn{border:.35vh solid var(--pc,var(--accent));background:color-mix(in srgb,var(--pc,var(--accent)) 6%,var(--s1));}
+  .turn .row{display:flex;align-items:center;justify-content:space-between;}
+  .turn .who{font-family:var(--disp);font-weight:700;font-size:4.6vh;margin:.6vh 0 1.6vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .turn .gain{font-family:var(--disp);font-weight:700;font-size:5vh;color:var(--accent);}
+  .darts{display:flex;gap:.8vw;}
+  .dart{flex:1;height:7vh;border-radius:1.2vh;background:var(--s2);display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:3vh;}
+  .dart.v{background:transparent;border:.25vh dashed var(--s3);color:var(--dim);}
+  .rk{display:flex;align-items:center;gap:1vw;font-size:2.3vh;font-weight:700;padding:.7vh 0;}
+  .rk .n{color:var(--mut);width:2vw;font-family:var(--disp);} .rk .g{flex:1;} .rk .dot{width:1.2vh;height:1.2vh;border-radius:50%;}
+  .follow{margin-top:auto;display:flex;align-items:center;gap:1.2vw;}
+  .follow .qr{background:#fff;border-radius:1vh;padding:.8vh;width:12vh;height:12vh;flex:none;}
+  .follow .qr svg{width:100%;height:100%;display:block;}
+  .follow .code{font-family:var(--disp);font-weight:700;font-size:3.2vh;}
+  .recapbar{display:flex;align-items:center;gap:1vw;border-radius:99px;background:var(--s1);padding:1.2vh 1.6vw;font-size:2.4vh;transition:background .4s;}
+  .recapbar.flash{background:var(--s3);}
+  .recapbar .w{font-weight:700;} .recapbar .x{color:var(--mut);flex:1;} .recapbar .r{font-weight:700;}
+  /* waiting room */
+  .wait{flex:1;display:flex;align-items:center;justify-content:center;gap:6vw;}
+  .wait .bigqr{background:#fff;border-radius:2.4vh;padding:2.4vh;width:52vh;height:52vh;}
+  .wait .bigqr svg{width:100%;height:100%;display:block;}
+  .wait h1{font-family:var(--disp);font-size:6vh;margin:0 0 2vh;}
+  .wait .code{font-family:var(--disp);font-weight:700;font-size:11vh;color:var(--accent);letter-spacing:.04em;line-height:1;margin:1vh 0 3vh;}
+  .wait p{font-size:2.6vh;color:var(--mut);line-height:1.5;margin:0;max-width:40vw;}
+  .chips{display:flex;flex-wrap:wrap;gap:1vh;margin-top:3vh;max-width:42vw;}
+  .chip{padding:1vh 1.6vw;border-radius:99px;background:var(--s1);font-weight:700;font-size:2.6vh;display:flex;align-items:center;gap:.8vw;animation:pop .5s ease-out;}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+  .sound{position:fixed;left:50%;transform:translateX(-50%);top:3vh;padding:1.6vh 2vw;border-radius:99px;border:.25vh solid var(--accent);color:var(--accent);background:none;font:700 2.2vh var(--body);cursor:pointer;}
+  /* podium / standings / recap */
+  .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .win{font-family:var(--disp);font-size:11vh;margin:0;animation:pop .7s ease-out;}
+  .pod{display:flex;align-items:flex-end;gap:2vw;margin-top:5vh;}
+  .pod .c{width:18vw;text-align:center;} .pod .b{border-radius:2vh 2vh .6vh .6vh;background:var(--s1);display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:8vh;color:var(--mut);animation:grow .9s ease-out both;transform-origin:bottom;}
+  .pod .nm{font-weight:700;font-size:3.4vh;margin-bottom:1.2vh;}
+  @keyframes grow{0%{transform:scaleY(0)}100%{transform:none}}
+  .stand{width:60vw;} .stand .rk{font-size:4vh;padding:1.4vh 0;border-bottom:1px solid var(--s2);} .stand .rk .dot{width:2vh;height:2vh;} .stand .rk .n{width:4vw;}
+  .recapwrap{flex:1;display:flex;align-items:center;justify-content:center;gap:4vw;}
+  .recapwrap{min-height:0;}
+  .recapwrap canvas{height:calc(100vh - 6.4vh);width:auto;aspect-ratio:9/16;border-radius:2vh;}
+  .big{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:9;}
+  .big span{font-family:var(--disp);font-weight:700;font-size:30vh;color:var(--accent);animation:bigev 1.8s ease-out forwards;text-shadow:0 0 8vh color-mix(in srgb,var(--accent) 60%,transparent);}
+  @keyframes bigev{0%{transform:scale(.4);opacity:0}20%{transform:scale(1.06);opacity:1}75%{transform:scale(1);opacity:1}100%{transform:scale(1.12);opacity:0}}
+  .fly{position:fixed;font-family:var(--disp);font-weight:700;font-size:7vh;pointer-events:none;z-index:8;animation:flyup 1.1s ease-out forwards;}
+  @keyframes flyup{0%{transform:translateY(2vh) scale(.7);opacity:0}25%{opacity:1;transform:none}100%{transform:translateY(-8vh);opacity:0}}
+  .msg{flex:1;display:grid;place-items:center;text-align:center;color:var(--mut);font-size:3vh;}
+  /* spectators on a phone (portrait) */
+  @media (max-aspect-ratio:1/1){
+    #app{padding:max(16px,env(safe-area-inset-top)) 14px 14px;gap:12px;}
+    .main{flex-direction:column;} .right{width:auto;} .follow,.sound{display:none;}
+    .pc .sc{font-size:30px;} .pc .nm{font-size:13px;} .num{font-size:22px;} .top .logo{font-size:30px;} .top .mode{font-size:11px;}
+    .xg .pc .sc{font-size:48px;} .xg .pc .nm{font-size:16px;} .turn .who{font-size:24px;} .turn .gain{font-size:26px;} .dart{height:44px;font-size:18px;}
+    .lbl{font-size:11px;} .rk{font-size:15px;} .recapbar{font-size:14px;} .cg{min-height:52vh;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<button class="sound" id="sound">🔊 Activer le son</button>
+<script src="lib/firebase-config.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="lib/recap-draw.js"></script>
+<script>
+// announcer.js expects these globals from the app; the TV only uses speak().
+const PREFS = { volume: 1, announcer: true, voice: 'classic' };
+const TV = { connected: false };
+function isUnlocked() { return true; }
+function uid() { return Math.random().toString(36).slice(2); }
+</script>
+<script src="lib/announcer.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const FR = (navigator.language || '').toLowerCase().startsWith('fr');
+const TX = FR ? {
+  waitTitle: 'Affiche la partie ici', step: 'Dans l’app Tchak Darts : menu › Afficher sur un écran, puis scanne ce QR code.',
+  orCode: 'ou tape le code', players: 'Joueurs', sound: '🔊 Activer le son', soundOn: '🔊 Son activé', noConfig: 'Mode TV pas encore configuré (firebase-config.js).',
+  conn: 'Connexion…', spectator: 'Partie en direct', lost: 'Salle introuvable ou terminée.', winner: 'gagne !', between: 'Classement de la soirée', marks: 'marques',
+} : {
+  waitTitle: 'Show the game here', step: 'In the Tchak Darts app: menu › Show on a screen, then scan this QR code.',
+  orCode: 'or type the code', players: 'Players', sound: '🔊 Turn sound on', soundOn: '🔊 Sound on', noConfig: 'TV mode not configured yet (firebase-config.js).',
+  conn: 'Connecting…', spectator: 'Live game', lost: 'Room not found or finished.', winner: 'wins!', between: 'Tonight’s standings', marks: 'marks',
+};
+const TARGETS = [20, 19, 18, 17, 16, 15, 25];
+const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const params = new URLSearchParams(location.search);
+const DEMO = params.has('demo') || location.hash.startsWith('#demo');
+const SPECTATOR = /^#[A-HJ-NP-Z2-9]{4}$/i.test(location.hash);
+let CODE = SPECTATOR ? location.hash.slice(1).toUpperCase() : null;
+let AUTH = null, ES = null, ROOM = {}, STATE = null, lastEv = null, lastAt = Date.now(), soundOn = false, lastRecapKey = '';
+
+// ---------------------------------------------------------- firebase (REST)
+async function auth() {
+  if (AUTH && AUTH.exp > Date.now() + 60e3) return AUTH;
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnSecureToken: true }) }).then((x) => x.json());
+  if (!r.idToken) throw new Error('auth');
+  AUTH = { token: r.idToken, uid: r.localId, exp: Date.now() + (+r.expiresIn || 3600) * 1000 };
+  return AUTH;
+}
+async function fb(path, method, body) {
+  const a = await auth();
+  const res = await fetch(`${FIREBASE.databaseURL}/${path}.json?auth=${encodeURIComponent(a.token)}`, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+async function createRoom() {
+  const a = await auth();
+  for (let k = 0; k < 8; k++) {
+    const code = Array.from({ length: 4 }, () => ALPHA[Math.floor(Math.random() * ALPHA.length)]).join('');
+    try { await fb('rooms/' + code, 'PUT', { tv: a.uid, t: { '.sv': 'timestamp' } }); return code; } catch (e) { /* taken: try another */ }
+  }
+  throw new Error('room');
+}
+function listen() {
+  if (ES) ES.close();
+  ROOM = {};
+  ES = new EventSource(`${FIREBASE.databaseURL}/rooms/${CODE}.json`);
+  const apply = (e, patch) => {
+    const m = JSON.parse(e.data);
+    if (!m) return;
+    if (m.path === '/') { if (m.data === null) { ROOM = {}; onGone(); return; } ROOM = patch ? Object.assign(ROOM, m.data) : (m.data || {}); }
+    else { const k = m.path.slice(1); if (m.data === null) delete ROOM[k]; else ROOM[k] = m.data; }
+    lastAt = Date.now();
+    if (ROOM.s) { try { onState(JSON.parse(ROOM.s)); } catch (x) {} }
+    else render();
+  };
+  ES.addEventListener('put', (e) => apply(e, false));
+  ES.addEventListener('patch', (e) => apply(e, true));
+}
+function onGone() {
+  if (SPECTATOR) { STATE = null; $('app').innerHTML = `<div class="msg">${esc(TX.lost)}</div>`; return; }
+  start();   // the phone ended the evening: open a fresh room
+}
+async function start() {
+  if (DEMO) { CODE = 'K7Q4'; demo(); return; }
+  if (!FIREBASE.apiKey || !FIREBASE.databaseURL) { $('app').innerHTML = `<div class="msg">${esc(TX.noConfig)}</div>`; return; }
+  $('app').innerHTML = `<div class="msg">${esc(TX.conn)}</div>`;
+  try {
+    if (!SPECTATOR) { const old = sessionStorage.getItem('tchak_room'); if (old) { fb('rooms/' + old, 'DELETE').catch(() => {}); } CODE = await createRoom(); sessionStorage.setItem('tchak_room', CODE); }
+    STATE = null; lastAt = Date.now();
+    listen(); render();
+  } catch (e) { $('app').innerHTML = `<div class="msg">${esc(TX.noConfig)}</div>`; setTimeout(start, 10000); }
+}
+// 30 min without any update: the room is deleted and a new one opens.
+setInterval(() => { if (!DEMO && !SPECTATOR && CODE && Date.now() - lastAt > 30 * 60e3) { fb('rooms/' + CODE, 'DELETE').catch(() => {}); start(); } }, 60e3);
+
+// ------------------------------------------------------------- rendering
+const followUrl = () => TV_PAGE + '#' + CODE;
+function qrSVG(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }
+function marks(n, color) {
+  if (!n) return '';
+  const s = `stroke="${color}" stroke-width="3.2" stroke-linecap="round" fill="none"`;
+  const a = `<path d="M15 33 L33 15" ${s}/>`, b = `<path d="M15 15 L33 33" ${s}/>`;
+  const body = n === 1 ? a : n === 2 ? a + b : `<path d="M17.5 30.5 L30.5 17.5" ${s}/><path d="M17.5 17.5 L30.5 30.5" ${s}/><circle cx="24" cy="24" r="17" ${s}/>`;
+  return `<svg viewBox="0 0 48 48">${body}</svg>`;
+}
+function onState(s) {
+  const prev = STATE;
+  STATE = s;
+  if (s.lang) document.documentElement.lang = s.lang;
+  render();
+  flyGain(s, prev);
+  // per-event effects, once each
+  if (s.ev && s.ev.id !== lastEv) {
+    lastEv = s.ev.id;
+    if (Date.now() - (s.ev.at || 0) < 8000 || DEMO) effects(s, prev);
+  }
+}
+function effects(s, prev) {
+  const k = s.ev.k;
+  if (k === '180') big('180 !');
+  else if (k === 'game' || k === 'leg') big('Game shot !');
+  if (soundOn && !SPECTATOR && s.ev.on !== false) {
+    const d = s.ev.d ? s.ev.d.map(([x, m]) => ({ s: x, m })) : null;
+    speak(s.ev.voice || 'classic', k, { n: s.ev.n, darts: d });
+  }
+}
+function big(text) { const el = document.createElement('div'); el.className = 'big'; el.innerHTML = `<span>${esc(text)}</span>`; document.body.appendChild(el); setTimeout(() => el.remove(), 1900); }
+function flyGain(s, prev) {
+  if (!prev || !prev.g || !s.g || prev.g.cur !== s.g.cur) return;
+  const delta = (s.g.gain || 0) - (prev.g.gain || 0);
+  const el = document.querySelector('.turn .gain');
+  if (!delta || !el) return;
+  const r = el.getBoundingClientRect();
+  const f = document.createElement('div'); f.className = 'fly'; f.textContent = (s.g.mode === 'x01' ? '' : '+') + delta; f.style.color = s.g.pl[s.g.cur].c;
+  f.style.left = (r.left - 20) + 'px'; f.style.top = (r.top + r.height) + 'px';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 1200);
+}
+
+function render() {
+  const app = $('app');
+  const s = STATE;
+  if (!s || s.ph === 'lobby' && !SPECTATOR) { if (!s || !s.g) { app.innerHTML = waitingHTML(s); return; } }
+  if (!s) { app.innerHTML = `<div class="msg">${esc(TX.conn)}</div>`; return; }
+  const tx = s.tx || {};
+  if (s.ph === 'play' && s.g) app.innerHTML = playHTML(s, tx);
+  else if (s.ph === 'end' && s.g) app.innerHTML = endHTML(s, tx);
+  else if (s.ph === 'recap' && s.rc) { app.innerHTML = recapHTML(s, tx); drawRecapLive(s.rc); }
+  else app.innerHTML = betweenHTML(s, tx);
+  const bar = document.querySelector('.recapbar');
+  if (bar && s.g && s.g.rc) { const key = JSON.stringify(s.g.rc); if (key !== lastRecapKey) { lastRecapKey = key; bar.classList.add('flash'); setTimeout(() => bar.classList.remove('flash'), 2000); } }
+}
+function topHTML(s, tx) {
+  const g = s.g;
+  const mode = g ? (g.mode === 'cricket' ? 'Cricket' : g.mode === 'cutthroat' ? 'Cut-throat' : g.start) + (g.legs > 1 ? ' · ' + (tx.leg || 'Manche') + ' ' + g.leg : '') : '';
+  const ses = s.gn != null ? `${(tx.evening || 'Soirée')} · ${(s.ph === 'play' ? s.gn + 1 : s.gn)}` : '';
+  return `<div class="top"><span class="logo">tchak</span><span class="mode">${esc(mode)}</span><span class="ses">${esc(ses)}</span></div>`;
+}
+function followHTML() {
+  if (SPECTATOR || !CODE) return '';
+  return `<div class="follow card"><div class="qr">${qrSVG(followUrl())}</div><div><div class="lbl">${esc((STATE && STATE.tx && STATE.tx.follow) || 'Suivre la partie')}</div><div class="code">TCHK-${esc(CODE)}</div></div></div>`;
+}
+function rankingHTML(s, tx, limit = 6) {
+  if (!s.r || !s.r.length) return '';
+  return `<div class="card"><div class="lbl" style="margin-bottom:1vh">${esc(tx.ranking || TX.between)}</div>${s.r.slice(0, limit).map((r, k) => `<div class="rk"><span class="n">${k + 1}</span><span class="dot" style="background:${esc(r.c)}"></span><span class="g">${esc(r.n)}</span><span>${r.w} ${esc(tx.winsShort || 'V')}</span></div>`).join('')}</div>`;
+}
+function waitingHTML(s) {
+  if (!CODE) return `<div class="msg">${esc(TX.conn)}</div>`;
+  const lob = (s && s.lob) || [];
+  return `<div class="wait"><div class="bigqr">${qrSVG(followUrl())}</div><div>
+    <div class="logo" style="font-size:7vh">tchak</div><h1>${esc(TX.waitTitle)}</h1><p>${esc(TX.step)}</p>
+    <p style="margin-top:3vh">${esc(TX.orCode)}</p><div class="code">TCHK-${esc(CODE)}</div>
+    ${lob.length ? `<div class="lbl">${esc(TX.players)}</div><div class="chips">${lob.map((p) => `<span class="chip"><span style="width:1.4vh;height:1.4vh;border-radius:50%;background:${esc(p.c)}"></span>${esc(p.n)}</span>`).join('')}</div>` : ''}
+  </div></div>`;
+}
+function playHTML(s, tx) {
+  const g = s.g, n = g.pl.length;
+  const cr = g.mode !== 'x01';
+  const rc = g.rc ? `<div class="recapbar"><span style="width:1.4vh;height:1.4vh;border-radius:50%;background:${esc(g.rc.color)}"></span><span class="w">${esc(g.rc.who)}</span><span class="x">${esc(g.rc.what)}</span><span class="r">${esc(g.rc.res)}</span></div>` : '';
+  let left;
+  const card = (p, i, cls = '') => `<div class="pc ${cls}${g.cur === i ? ' cur' : ''}${g.nxt === i && g.cur !== i ? ' nxt' : ''}" style="--pc:${esc(p.c)}"><span class="nm">${esc(p.n)}</span><span class="sc">${p.sc}</span>${g.legs > 1 ? `<span class="lbl" style="margin-top:.4vh">${p.lw}/${g.legs}</span>` : ''}${!cr && g.cur === i && g.sug ? `<span class="sug">${esc(g.sug.join(' · '))}</span>` : ''}</div>`;
+  if (cr) {
+    left = `<div class="cg" style="grid-template-columns:8vw repeat(${n},1fr)"><div></div>${g.pl.map((p, i) => card(p, i)).join('')}`;
+    TARGETS.forEach((t, ti) => {
+      const closed = g.cl && g.cl[ti];
+      left += `<div class="num${closed ? ' closed' : ''}">${t === 25 ? 'B' : t}</div>`;
+      g.pl.forEach((p, i) => { left += `<div class="cell${g.cur === i ? ' cur' : ''}${closed ? ' closed' : ''}" style="--pc:${esc(p.c)}">${marks(p.mk ? p.mk[ti] : 0, p.c)}</div>`; });
+    });
+    left += '</div>';
+  } else {
+    const cols = n <= 3 ? n : n === 4 ? 2 : 4;
+    left = `<div class="xg${n > 4 ? ' many' : ''}" style="grid-template-columns:repeat(${cols},1fr)">${g.pl.map((p, i) => card(p, i)).join('')}</div>`;
+  }
+  const cur = g.pl[g.cur];
+  const darts = [0, 1, 2].map((k) => g.vd[k] ? `<div class="dart">${esc(g.vd[k])}</div>` : '<div class="dart v">•</div>').join('');
+  const gain = g.gain ? (cr ? '+' + g.gain : g.gain) : '';
+  const right = cur ? `<div class="card turn" style="--pc:${esc(cur.c)}"><div class="row"><span class="lbl" style="color:${esc(cur.c)}">${esc(tx.yourTurn || 'À TOI')}</span><span class="gain">${esc(gain)}</span></div>
+    <div class="who">${esc(cur.n)}</div><div class="darts">${darts}</div></div>` : '';
+  return `${topHTML(s, tx)}${rc}<div class="main"><div class="left">${left}</div><div class="right">${right}${rankingHTML(s, tx, 5)}${followHTML()}</div></div>`;
+}
+function endHTML(s, tx) {
+  const g = s.g;
+  const w = g.pl[g.win] || g.pl[0];
+  const order = g.pl.map((p, i) => i).sort((a, b) => (a === g.win ? -1 : b === g.win ? 1 : b === a ? 0 : (g.pl[b].lw - g.pl[a].lw) || (g.mode === 'x01' || g.mode === 'cutthroat' ? g.pl[a].sc - g.pl[b].sc : g.pl[b].sc - g.pl[a].sc)));
+  const top = order.slice(0, 3); const disp = top.length === 3 ? [top[1], top[0], top[2]] : top.length === 2 ? [top[1], top[0]] : top;
+  const hs = [34, 24, 17];
+  return `${topHTML(s, tx)}<div class="center"><h1 class="win" style="color:${esc(w.c)}">${esc(w.n)} ${esc(TX.winner)}</h1>
+    <div class="pod">${disp.map((i) => { const k = order.indexOf(i); const p = g.pl[i]; return `<div class="c"><div class="nm" style="color:${esc(p.c)}">${esc(p.n)}</div><div class="b" style="height:${hs[k]}vh;animation-delay:${(2 - k) * .2}s;${k === 0 ? `background:color-mix(in srgb,${p.c} 25%,var(--s1));color:${p.c}` : ''}">${k + 1}</div></div>`; }).join('')}</div></div>
+    <div style="position:fixed;right:2.6vw;bottom:3vh;width:31vw">${followHTML()}</div>`;
+}
+function betweenHTML(s, tx) {
+  if (!s.r || !s.r.length) return waitingHTML(s);
+  return `${topHTML(s, tx)}<div class="center"><div class="lbl" style="font-size:2.4vh;margin-bottom:3vh">${esc(tx.ranking || TX.between)}</div>
+    <div class="stand">${s.r.map((r, k) => `<div class="rk"><span class="n">${k + 1}</span><span class="dot" style="background:${esc(r.c)}"></span><span class="g">${esc(r.n)}</span><span style="color:var(--mut);margin-right:2vw">${r.p} pts</span><span>${r.w} ${esc(tx.winsShort || 'V')}</span></div>`).join('')}</div></div>
+    <div style="position:fixed;right:2.6vw;bottom:3vh;width:31vw">${followHTML()}</div>`;
+}
+function recapHTML(s, tx) { return `<div class="recapwrap"><canvas id="rc" width="1080" height="1920"></canvas>${SPECTATOR ? '' : `<div style="width:30vw">${followHTML()}</div>`}</div>`; }
+let rcAnim = 0;
+function drawRecapLive(d) {
+  const c = $('rc'); if (!c) return;
+  const ctx = c.getContext('2d'); const id = ++rcAnim; const t0 = performance.now();
+  const step = (now) => { if (id !== rcAnim || !c.isConnected) return; const p = Math.min(1, (now - t0) / 3600); drawRecap(ctx, 1080, 1920, d, p, '#C6F432'); if (p < 1) requestAnimationFrame(step); };
+  document.fonts.ready.then(() => requestAnimationFrame(step));
+}
+
+// ------------------------------------------------------------------- sound
+$('sound').textContent = TX.sound;
+$('sound').onclick = () => {
+  soundOn = true; $('sound').textContent = TX.soundOn;
+  try { speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); } catch (e) {}
+  setTimeout(() => { $('sound').style.display = 'none'; }, 1500);
+};
+if (SPECTATOR) $('sound').style.display = 'none';
+
+// -------------------------------------------------------------------- demo
+function demo() {
+  const pl = (sc, mk) => sc.map((v, i) => ({ n: ['Florian', 'Max', 'Léa'][i], c: ['#C6F432', '#4DA3FF', '#FF8A3D'][i], sc: v, lw: 0, mk: mk && mk[i] }));
+  const tx = { yourTurn: 'À TOI', next: 'ENSUITE', leg: 'Manche', evening: 'Soirée', ranking: 'Classement de la soirée', follow: 'Suivre la partie', winsShort: 'V' };
+  const r = [{ n: 'Max', c: '#4DA3FF', w: 3, p: 412 }, { n: 'Florian', c: '#C6F432', w: 2, p: 380 }, { n: 'Léa', c: '#FF8A3D', w: 1, p: 301 }];
+  const states = {
+    wait: { ph: 'lobby', lob: [{ n: 'Florian', c: '#C6F432' }, { n: 'Max', c: '#4DA3FF' }, { n: 'Léa', c: '#FF8A3D' }], tx },
+    cricket: { ph: 'play', tx, r, gn: 5, g: { mode: 'cricket', legs: 1, leg: 1, cur: 0, nxt: 1, pl: pl([60, 19, 32], [[3, 2, 3, 3, 1, 0, 0], [1, 3, 0, 3, 0, 2, 0], [0, 1, 2, 3, 3, 0, 1]]), cl: [false, false, false, true, false, false, false], vd: ['T20', '19'], gain: 40, rc: { color: '#FF8A3D', who: 'Léa', what: 'T16 · raté · raté', res: 'ferme le 16' } } },
+    x01: { ph: 'play', tx, r, gn: 5, g: { mode: 'x01', start: 501, legs: 3, leg: 2, cur: 1, nxt: 2, pl: pl([141, 170, 312]).map((p, i) => Object.assign(p, { lw: [1, 0, 0][i] })), vd: [], gain: 0, sug: ['T20', 'T20', 'Bull'], rc: { color: '#C6F432', who: 'Florian', what: 'T20 · T20 · T20', res: '180' } } },
+    end: { ph: 'end', tx, r, gn: 6, g: { mode: 'cricket', legs: 1, leg: 1, cur: -1, nxt: -1, win: 1, pl: pl([60, 95, 32]) } },
+    between: { ph: 'between', tx, r, gn: 6 },
+  };
+  const which = params.get('demo') || location.hash.replace(/^#demo-?/, '') || 'cricket';
+  if (which === 'recap') {
+    onState({ ph: 'recap', tx, rc: { mvp: { n: 'Max', c: '#4DA3FF' }, podium: [{ n: 'Max', c: '#4DA3FF', w: 3 }, { n: 'Florian', c: '#C6F432', w: 2 }, { n: 'Léa', c: '#FF8A3D', w: 1 }], players: [{ n: 'Max', c: '#4DA3FF', w: 3, fav: 20 }, { n: 'Florian', c: '#C6F432', w: 2, fav: 19 }, { n: 'Léa', c: '#FF8A3D', w: 1, fav: 25 }], best: { n: 'Florian', c: '#C6F432', darts: ['T20', 'T20', 'T19'], pts: 177, cr: false }, blank: { n: 'Léa', c: '#FF8A3D', k: 3 }, games: 6, dur: '2 h 10', date: '21 novembre', tx: { mvp: 'MVP de la soirée', best: 'Meilleure volée', blank: 'Le plus gros raté', blanks: 'volées blanches d’affilée', games: 'parties', wins: 'V', fav: 'cible préférée', title: 'Récap de soirée', marks: 'marques' } } });
+    return;
+  }
+  onState(states[which] || states.cricket);
+}
+window.addEventListener('hashchange', () => { if (DEMO) { const w = location.hash.replace(/^#demo-?/, ''); if (w) { $('app').innerHTML = ''; lastEv = null; demo(); } } else location.reload(); });
+start();
+</script>
+</body>
+</html>
