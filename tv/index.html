@@ -252,7 +252,7 @@ function render() {
 }
 function topHTML(s, tx) {
   const g = s.g;
-  const mode = g ? (g.mode === 'cricket' ? 'Cricket' : g.mode === 'cutthroat' ? 'Cut-throat' : g.start) + (g.legs > 1 ? ' · ' + (tx.leg || 'Manche') + ' ' + g.leg : '') : '';
+  const mode = g ? (g.mn || (g.mode === 'cricket' ? 'Cricket' : g.mode === 'cutthroat' ? 'Cut-throat' : g.start)) + (g.legs > 1 ? ' · ' + (tx.leg || 'Manche') + ' ' + g.leg : '') : '';
   const ses = s.gn != null ? `${(tx.evening || 'Session')} · ${(s.ph === 'play' ? s.gn + 1 : s.gn)}` : '';
   return `<div class="top"><span class="logo">tchak</span><span class="mode">${esc(mode)}</span><span class="ses">${esc(ses)}</span></div>`;
 }
@@ -275,10 +275,11 @@ function waitingHTML(s) {
 }
 function playHTML(s, tx) {
   const g = s.g, n = g.pl.length;
-  const cr = g.mode !== 'x01';
+  const cr = g.kind ? g.kind === 'cricket' : g.mode !== 'x01';
+  const plus = g.kind ? g.kind !== 'x01' : cr;
   const rc = g.rc ? `<div class="recapbar"><span style="width:1.4vh;height:1.4vh;border-radius:50%;background:${esc(g.rc.color)}"></span><span class="w">${esc(g.rc.who)}</span><span class="x">${esc(g.rc.what)}</span><span class="r">${esc(g.rc.res)}</span></div>` : '';
   let left;
-  const card = (p, i, cls = '') => `<div class="pc ${cls}${g.cur === i ? ' cur' : ''}${g.nxt === i && g.cur !== i ? ' nxt' : ''}" style="--pc:${esc(p.c)}"><span class="nm">${esc(p.n)}</span><span class="sc">${p.sc}</span>${g.legs > 1 ? `<span class="lbl" style="margin-top:.4vh">${p.lw}/${g.legs}</span>` : ''}${!cr && g.cur === i && g.sug ? `<span class="sug">${esc(g.sug.join(' · '))}</span>` : ''}</div>`;
+  const card = (p, i, cls = '') => `<div class="pc ${cls}${g.cur === i ? ' cur' : ''}${g.nxt === i && g.cur !== i ? ' nxt' : ''}" style="--pc:${esc(p.c)}"><span class="nm">${esc(p.n)}</span><span class="sc">${esc(String(p.sc))}</span>${p.sb ? `<span class="lbl" style="margin-top:.4vh;color:${esc(p.c)}">${esc(p.sb)}</span>` : ''}${g.legs > 1 ? `<span class="lbl" style="margin-top:.4vh">${p.lw}/${g.legs}</span>` : ''}${!cr && g.cur === i && g.sug ? `<span class="sug">${esc(g.sug.join(' · '))}</span>` : ''}</div>`;
   if (cr) {
     left = `<div class="cg" style="grid-template-columns:8vw repeat(${n},1fr)"><div></div>${g.pl.map((p, i) => card(p, i)).join('')}`;
     TARGETS.forEach((t, ti) => {
@@ -293,7 +294,7 @@ function playHTML(s, tx) {
   }
   const cur = g.pl[g.cur];
   const darts = [0, 1, 2].map((k) => g.vd[k] ? `<div class="dart">${esc(g.vd[k])}</div>` : '<div class="dart v">•</div>').join('');
-  const gain = g.gain ? (cr ? '+' + g.gain : g.gain) : '';
+  const gain = g.gain ? (plus ? '+' + g.gain : g.gain) : '';
   const right = cur ? `<div class="card turn" style="--pc:${esc(cur.c)}"><div class="row"><span class="lbl" style="color:${esc(cur.c)}">${esc(tx.yourTurn || 'À TOI')}</span><span class="gain">${esc(gain)}</span></div>
     <div class="who">${esc(cur.n)}</div><div class="darts">${darts}</div></div>` : '';
   return `${topHTML(s, tx)}${rc}<div class="main"><div class="left">${left}</div><div class="right">${right}${rankingHTML(s, tx, 5)}${followHTML()}</div></div>`;
@@ -301,7 +302,7 @@ function playHTML(s, tx) {
 function endHTML(s, tx) {
   const g = s.g;
   const w = g.pl[g.win] || g.pl[0];
-  const order = g.pl.map((p, i) => i).sort((a, b) => (a === g.win ? -1 : b === g.win ? 1 : b === a ? 0 : (g.pl[b].lw - g.pl[a].lw) || (g.mode === 'x01' || g.mode === 'cutthroat' ? g.pl[a].sc - g.pl[b].sc : g.pl[b].sc - g.pl[a].sc)));
+  const order = g.ord || g.pl.map((p, i) => i).sort((a, b) => (a === g.win ? -1 : b === g.win ? 1 : b === a ? 0 : (g.pl[b].lw - g.pl[a].lw) || (g.mode === 'x01' || g.mode === 'cutthroat' ? g.pl[a].sc - g.pl[b].sc : g.pl[b].sc - g.pl[a].sc)));
   const top = order.slice(0, 3); const disp = top.length === 3 ? [top[1], top[0], top[2]] : top.length === 2 ? [top[1], top[0]] : top;
   const hs = [34, 24, 17];
   return `${topHTML(s, tx)}<div class="center"><h1 class="win" style="color:${esc(w.c)}">${esc(w.n)} ${esc(TX.winner)}</h1>

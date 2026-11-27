@@ -77,6 +77,8 @@ const VOICES = {
     },
   },
 };
+// The players' own recordings (voice-rec.js); unrecorded moments = Classic.
+VOICES.mine = { free: false, mine: true, lang: 'fr-FR', rate: 1.05, pitch: 1, files: {}, lines: VOICES.classic.lines };
 const VOICE_IDS = Object.keys(VOICES);
 
 function spokenDart(d, lang) {
@@ -99,6 +101,10 @@ function voiceLine(id, key, params) {
 
 let speakQueueAt = 0;
 function speak(id, key, params) {
+  if (id === 'mine') {
+    if (typeof playClip === 'function' && playClip(key)) return;
+    id = 'classic';
+  }
   const v = VOICES[id];
   if (!v) return;
   const nFiles = v.files[key];
@@ -130,12 +136,13 @@ function announce(key, params) {
   // Sent to the TV, which plays it once (id) through its own speakers.
   LAST_EVENT = { k: key, n: params.n != null ? params.n : null, d: params.darts ? params.darts.map((d) => [d.s, d.m]) : null, id: uid(), at: Date.now(), voice: isUnlocked('voice', PREFS.voice) ? PREFS.voice : 'classic', on: PREFS.announcer };
   if (!PREFS.announcer) return;
-  if (TV.connected) return;
   const id = isUnlocked('voice', PREFS.voice) ? PREFS.voice : 'classic';
+  if (TV.connected && id !== 'mine') return;     // the TV has no copy of the players' recordings
   speak(id, key, params);
 }
 function previewVoice(id) {
   const keep = PREFS.announcer; PREFS.announcer = true;
-  speak(id, '180', {});
+  const k = id === 'mine' && typeof MYVOICE_KEYS !== 'undefined' ? (MYVOICE_KEYS.find(hasClip) || '180') : '180';
+  speak(id, k, {});
   PREFS.announcer = keep;
 }
